@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BSVKey on XRP: verifiable payments, multi-rail</title>
+<meta name="description" content="BSVKey is going multi-rail: verifiable, non-custodial, pay-per-call settlement for AI agents. Live on BSV, coming to the XRP Ledger.">
+<style>
+  :root{
+    --ground:#0e0d0b; --surface:#17150f; --surface-2:#1e1b14;
+    --ink:#ede7d8; --muted:#b0a68f; --border:#2a271f; --border-strong:#39352a;
+    --bsv:#E7A33E; --xrp:#23A0D6; --good:#7BC98A; --accent:#4FD1C5;
+    --font:-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+    --maxw:960px;
+  }
+  @media (prefers-color-scheme:light){
+    :root:not([data-theme="dark"]){
+      --ground:#FBF9F4; --surface:#fff; --surface-2:#F4EFE4;
+      --ink:#16130e; --muted:#504839; --border:#e4ddcf; --border-strong:#d6ccb8;
+    }
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--ground); color:var(--ink); font-family:var(--font); line-height:1.55; -webkit-font-smoothing:antialiased}
+  a{color:var(--accent); text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:var(--maxw); margin:0 auto; padding:0 22px}
+  header{border-bottom:1px solid var(--border); background:var(--surface)}
+  header .wrap{display:flex; align-items:center; gap:12px; height:60px}
+  .brand{font-weight:700; letter-spacing:-.01em; display:flex; align-items:center; gap:9px}
+  .dot{width:10px; height:10px; border-radius:50%; background:var(--xrp); box-shadow:0 0 0 3px rgba(35,160,214,.18)}
+  .grow{flex:1}
+  .nav a{color:var(--muted); font-size:14px; margin-left:16px}
+  .hero{padding:64px 0 40px}
+  .eyebrow{font-family:var(--mono); font-size:13px; color:var(--xrp); text-transform:uppercase; letter-spacing:.08em}
+  h1{font-size:clamp(2rem,5vw,3.2rem); letter-spacing:-.025em; margin:14px 0 16px}
+  .lede{font-size:1.15rem; color:var(--muted); max-width:46ch}
+  .status{display:inline-flex; align-items:center; gap:8px; margin-top:20px; padding:7px 13px; border:1px solid var(--border-strong); border-radius:999px; font-size:13px; color:var(--muted); background:var(--surface-2)}
+  .status b{color:var(--xrp)}
+  .cta-row{display:flex; gap:12px; flex-wrap:wrap; margin-top:26px}
+  .btn{font-weight:600; padding:11px 18px; border-radius:10px; border:1px solid var(--border-strong); background:var(--surface-2); color:var(--ink); cursor:pointer; font-size:15px}
+  .btn-primary{background:var(--xrp); border-color:var(--xrp); color:#04121a}
+  section{padding:34px 0; border-top:1px solid var(--border)}
+  h2{font-size:1.5rem; letter-spacing:-.02em; margin:0 0 8px}
+  .sub{color:var(--muted); max-width:60ch; margin:0 0 22px}
+  .rails{display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:16px}
+  .rail{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:20px}
+  .rail h3{margin:0 0 4px; font-size:1.15rem; display:flex; align-items:center; gap:9px}
+  .tag{font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; padding:3px 9px; border-radius:999px}
+  .tag.live{background:rgba(123,201,138,.16); color:var(--good)}
+  .tag.dev{background:rgba(35,160,214,.16); color:var(--xrp)}
+  .tag.soon{background:var(--surface-2); color:var(--muted)}
+  .rail p{color:var(--muted); font-size:14px; margin:8px 0 0}
+  .rail .dotb{width:9px;height:9px;border-radius:50%}
+  .grid3{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px}
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px}
+  .card h4{margin:0 0 6px; font-size:1rem}
+  .card p{color:var(--muted); font-size:14px; margin:0}
+  footer{border-top:1px solid var(--border); color:var(--muted); font-size:13px; padding:26px 0 40px}
+  footer a{color:var(--muted)}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand"><span class="dot"></span> BSVKey</div>
+  <span class="grow"></span>
+  <nav class="nav">
+    <a href="https://inference.bsvkey.com">Inference</a>
+    <a href="https://paywall.bsvkey.com">Paywall</a>
+    <a href="https://bsvkey.com">BSVKey</a>
+  </nav>
+</div></header>
+
+<main class="wrap">
+  <section class="hero" style="border-top:0">
+    <div class="eyebrow">Multi-rail settlement</div>
+    <h1>Verifiable payments for AI agents, now going multi-rail.</h1>
+    <p class="lede">BSVKey settles agent payments per call, non-custodially, and returns a receipt anyone can verify. That model is rail-neutral. It is live on BSV, and the XRP Ledger is the next rail.</p>
+    <div class="status">Status: <b>XRP rail in development</b> &nbsp;·&nbsp; early access open</div>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="mailto:support@embryospace.com?subject=BSVKey%20on%20XRP%20-%20early%20access&body=Tell%20us%20what%20you%27d%20settle%20on%20the%20XRP%20rail%20(inference%2C%20API%20paywall%2C%20or%20other)%20and%20rough%20volume.">Request early access</a>
+      <a class="btn" href="https://inference.bsvkey.com">See it live on BSV</a>
+    </div>
+  </section>
+
+  <section>
+    <h2>The rails</h2>
+    <p class="sub">The settlement layer is a rail. The verifiable-receipt layer on top of it is not, it is the same across every rail. We add rails where agents already hold value.</p>
+    <div class="rails">
+      <div class="rail">
+        <h3><span class="dotb" style="background:var(--bsv)"></span> BSV <span class="tag live">Live</span></h3>
+        <p>Pay-per-token inference and a drop-in x402 API paywall. On-chain, non-custodial settlement with a verifiable receipt per call. In production today.</p>
+        <p style="margin-top:10px"><a href="https://inference.bsvkey.com">inference.bsvkey.com</a> · <a href="https://paywall.bsvkey.com">paywall.bsvkey.com</a></p>
+      </div>
+      <div class="rail">
+        <h3><span class="dotb" style="background:var(--xrp)"></span> XRP Ledger <span class="tag dev">In development</span></h3>
+        <p>The same pay-per-call model settled on the XRP Ledger, for agents and services that already transact in XRP. Under active design. Early-access partners help shape it.</p>
+        <p style="margin-top:10px"><a href="mailto:support@embryospace.com?subject=BSVKey%20on%20XRP%20-%20early%20access">Join early access</a></p>
+      </div>
+      <div class="rail">
+        <h3><span class="dotb" style="background:var(--muted)"></span> More rails <span class="tag soon">As demand warrants</span></h3>
+        <p>Rails are added where there is real agent volume, not for a logo grid. Tell us the rail you need and why.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What stays the same on every rail</h2>
+    <p class="sub">Switching the settlement rail does not change the guarantee. The part that matters is rail-neutral by design.</p>
+    <div class="grid3">
+      <div class="card"><h4>Non-custodial</h4><p>Funds settle straight to the payee. BSVKey never holds them, on any rail.</p></div>
+      <div class="card"><h4>Pay per call</h4><p>Metered settlement per request, no accounts or prepaid lock-in required.</p></div>
+      <div class="card"><h4>Verifiable receipts</h4><p>A content-addressed, signed record of each settled call that anyone can verify offline, tied to the on-chain transaction. The claim format is shared across rails; only the signature envelope and address encoding are rail-specific.</p></div>
+    </div>
+    <p class="sub" style="margin-top:20px">We build the verifiable-receipt layer in the open. We contributed the BSV rail to an emerging post-call attestation standard for agent payments: <a href="https://github.com/EmbryoSpace/bsv-capacity-attest">EmbryoSpace/bsv-capacity-attest</a>. The XRP rail follows the same content-addressed core.</p>
+  </section>
+
+  <section>
+    <h2>Building on XRP, or want it?</h2>
+    <p class="sub">Early-access partners tell us what they would settle on the XRP rail (inference, an API paywall, or something else) and roughly what volume. That is what decides build order.</p>
+    <div class="cta-row">
+      <a class="btn btn-primary" href="mailto:support@embryospace.com?subject=BSVKey%20on%20XRP%20-%20early%20access">Request early access</a>
+    </div>
+  </section>
+</main>
+
+<footer><div class="wrap">
+  BSVKey is a product of Embryo Space Inc. Verifiable, non-custodial, pay-per-call settlement for AI agents. BSV is live today; the XRP Ledger rail is in development. Nothing here is investment advice.
+  <div style="margin-top:8px"><a href="https://inference.bsvkey.com">Inference</a> · <a href="https://paywall.bsvkey.com">Paywall</a> · <a href="https://bsvkey.com">BSVKey</a> · <a href="mailto:support@embryospace.com">support@embryospace.com</a></div>
+</div></footer>
+</body>
+</html>
