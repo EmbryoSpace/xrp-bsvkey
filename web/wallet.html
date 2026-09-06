@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>XRP wallet creator, BSVKey</title>
+<meta name="description" content="Create an XRP wallet in your browser, save the seed, fund the address, and check the balance. Testnet or mainnet.">
+<style>
+  :root{
+    --ground:#0e0d0b; --surface:#17150f; --surface-2:#1e1b14;
+    --ink:#ede7d8; --muted:#b0a68f; --border:#2a271f; --border-strong:#39352a;
+    --xrp:#23A0D6; --good:#7BC98A; --bad:#E8836F; --warn:#E7A33E;
+    --font:-apple-system,system-ui,"Segoe UI",Roboto,sans-serif;
+    --mono:ui-monospace,"SFMono-Regular",Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:light){:root:not([data-theme="dark"]){--ground:#FBF9F4;--surface:#fff;--surface-2:#F4EFE4;--ink:#16130e;--muted:#504839;--border:#e4ddcf;--border-strong:#d6ccb8}}
+  *{box-sizing:border-box} html,body{margin:0}
+  body{background:var(--ground);color:var(--ink);font-family:var(--font);line-height:1.5}
+  .wrap{max-width:620px;margin:0 auto;padding:0 20px}
+  header{border-bottom:1px solid var(--border);background:var(--surface)}
+  header .wrap{display:flex;align-items:center;gap:10px;height:56px}
+  .brand{font-weight:700;display:flex;align-items:center;gap:8px}
+  .dot{width:10px;height:10px;border-radius:50%;background:var(--xrp);box-shadow:0 0 0 3px rgba(35,160,214,.18)}
+  .grow{flex:1}
+  h1{font-size:1.5rem;margin:26px 0 6px}
+  .sub{color:var(--muted);margin:0 0 18px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin:14px 0}
+  label{display:block;font-size:12px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin:0 0 5px}
+  button{font:inherit;font-weight:600;cursor:pointer;border-radius:10px;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--ink);padding:10px 15px}
+  .btn-primary{background:var(--xrp);border-color:var(--xrp);color:#04121a}
+  .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  input{font:inherit;width:100%;padding:9px 11px;border-radius:9px;border:1px solid var(--border-strong);background:var(--surface);color:var(--ink)}
+  .field{display:flex;gap:8px;align-items:center;margin-top:8px}
+  .field code{flex:1;overflow:auto;padding:9px 11px;background:var(--surface-2);border-radius:8px;font-family:var(--mono);font-size:13px;white-space:nowrap}
+  .warn{background:rgba(231,163,62,.12);border:1px solid var(--warn);color:var(--warn);border-radius:10px;padding:11px 13px;font-size:13px;margin:12px 0}
+  .muted{color:var(--muted);font-size:13px}
+  .seg{display:inline-flex;border:1px solid var(--border-strong);border-radius:9px;overflow:hidden}
+  .seg button{border:0;border-radius:0;background:transparent;padding:7px 13px;font-size:13px}
+  .seg button.on{background:var(--xrp);color:#04121a}
+  #qr{margin-top:12px}
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600}
+  .pill.good{background:rgba(123,201,138,.16);color:var(--good)} .pill.bad{background:rgba(232,131,111,.16);color:var(--bad)}
+  a{color:var(--xrp)}
+  [hidden]{display:none!important}
+  footer{color:var(--muted);font-size:12px;padding:24px 0 40px}
+</style>
+</head>
+<body>
+<header><div class="wrap">
+  <div class="brand"><span class="dot"></span> BSVKey</div><span class="grow"></span>
+  <a class="muted" href="https://xrp.bsvkey.com" style="text-decoration:none">XRP rail</a>
+</div></header>
+
+<main class="wrap">
+  <h1>XRP wallet creator</h1>
+  <p class="sub">Generate an XRP wallet in your browser, save the seed, fund the address, and check the balance. Keys are created locally and never sent anywhere.</p>
+
+  <div class="card">
+    <label>Network</label>
+    <div class="row">
+      <div class="seg" id="netSeg">
+        <button data-net="testnet">Testnet</button>
+        <button data-net="mainnet" class="on">Mainnet</button>
+      </div>
+      <span class="muted" id="netNote">Mainnet: real XRP. Double-check before funding.</span>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn-primary" id="createBtn">Create new wallet</button>
+      <button id="importBtn">Import a seed</button>
+    </div>
+    <div id="importRow" hidden style="margin-top:12px">
+      <label for="seedIn">Paste a family seed (starts with s)</label>
+      <div class="field"><input id="seedIn" type="password" placeholder="s..." autocomplete="off" spellcheck="false"><button id="revealIn" type="button" title="Show or hide what you typed">Show</button><button id="loadBtn">Load</button></div>
+      <div style="margin-top:10px">
+        <label for="fileIn">Or import a backup file (.json or .txt)</label>
+        <input id="fileIn" type="file" accept=".json,.txt,application/json,text/plain">
+      </div>
+    </div>
+    <div id="err" class="warn" hidden style="border-color:var(--bad);color:var(--bad);background:rgba(232,131,111,.1)"></div>
+  </div>
+
+  <div id="walletCard" class="card" hidden>
+    <div class="warn"><b>Save your seed now.</b> It is the only way to control this wallet's funds. Anyone who sees it can take the money. It is shown here once; store it in a password manager. BSVKey never sees it.</div>
+
+    <label>Seed (secret)</label>
+    <div class="field"><code id="seed"></code><button id="showSeed">Show</button><button id="copySeed">Copy</button></div>
+
+    <div class="row" style="margin-top:12px">
+      <button id="dlJson">Download wallet (.json)</button>
+      <button id="dlTxt">Download paper backup (.txt)</button>
+    </div>
+    <p class="muted" style="margin-top:6px">The download contains the secret seed in plain text. Store it somewhere safe (a password manager or offline), not in your Downloads folder.</p>
+
+    <label style="margin-top:14px">Classic address (fund this)</label>
+    <div class="field"><code id="addr"></code><button id="copyAddr">Copy</button></div>
+
+    <label style="margin-top:14px">Public key</label>
+    <div class="field"><code id="pub"></code></div>
+
+    <div id="qr"></div>
+
+    <div class="warn" id="reserveNote" style="border-color:var(--border-strong);color:var(--muted);background:var(--surface-2)">
+      An XRP account must hold a base reserve to be activated (about 1 XRP on mainnet). Send at least that to the address above, or the account stays inactive.
+    </div>
+
+    <div class="row" style="margin-top:6px">
+      <button class="btn-primary" id="balBtn">Check balance</button>
+      <button id="faucetBtn" hidden>Fund on testnet (faucet)</button>
+      <span id="balOut" class="muted"></span>
+    </div>
+
+    <div style="margin-top:18px;border-top:1px solid var(--border);padding-top:16px">
+      <label>Send XRP</label>
+      <div style="display:grid;gap:8px">
+        <input id="sendTo" placeholder="Destination address (r...)" autocomplete="off" spellcheck="false">
+        <div class="row" style="gap:8px">
+          <input id="sendAmt" type="number" min="0" step="0.000001" placeholder="Amount (XRP)" style="flex:2">
+          <input id="sendTag" type="number" min="0" step="1" placeholder="Destination tag (optional)" style="flex:3">
+        </div>
+        <input id="sendMemo" placeholder="Memo (optional): invoice ID, reference, note" autocomplete="off" maxlength="900">
+        <div class="row">
+          <button class="btn-primary" id="sendBtn">Send</button>
+          <span id="sendOut" class="muted"></span>
+        </div>
+      </div>
+      <p class="muted" style="margin-top:6px">Sending is irreversible and settles on the live XRP Ledger. Many exchanges require a destination tag: leaving it out can lose the funds. The memo is written on-chain in plain text and is publicly visible; do not put anything private in it.</p>
+    </div>
+
+    <div class="row" style="margin-top:14px">
+      <label style="margin:0"><input type="checkbox" id="saveChk" style="width:auto;margin-right:6px">Save in this browser</label>
+      <button id="forgetBtn" hidden>Forget saved copy</button>
+      <span class="grow"></span>
+      <button id="wipeBtn" style="border-color:var(--bad);color:var(--bad)">Forget wallet</button>
+    </div>
+    <p class="muted" style="margin-top:6px">Saving keeps the seed in this browser's local storage only, on this device. Anyone with access to this device could spend it. Use a small amount, or leave this off and keep the seed in a password manager. "Forget wallet" clears it from this page and this browser: make sure you have downloaded or copied the seed first, or the funds are lost.</p>
+  </div>
+
+  <footer>
+    <div class="row" style="justify-content:space-between;align-items:flex-end;gap:12px">
+      <div>
+        <div class="brand" style="margin-bottom:6px"><span class="dot"></span> BSVKey XRP Wallet</div>
+        <div>Embryo Space Inc. DBA BSVKey</div>
+      </div>
+      <div><a href="https://xrp.bsvkey.com">xrp.bsvkey.com</a></div>
+    </div>
+
+    <div id="disclaimers" style="border-top:1px solid var(--border);margin-top:22px;padding-top:20px">
+      <p style="font-weight:700;letter-spacing:.04em;text-transform:uppercase;font-size:11px;color:var(--muted);margin:0 0 10px">Important disclaimers, risk acceptance &amp; privacy</p>
+      <div style="font-size:12px;line-height:1.7;color:var(--muted);max-width:840px">
+        <p style="margin:0 0 8px">The BSVKey XRP Wallet is provided strictly on an <b>"AS IS"</b> and <b>"AS AVAILABLE"</b> basis. By generating a wallet, loading or importing a seed, saving or exporting a wallet, funding an address, or using any feature, you acknowledge and agree that:</p>
+        <ol style="margin:0;padding-left:18px;display:grid;gap:6px">
+          <li><b>You accept all risk.</b> You alone are responsible for every action, including loss of seeds, secret keys, or funds; sending to incorrect addresses; failed, stuck, or underfunded transactions; and fees or reserves paid.</li>
+          <li><b>No warranties.</b> The service, its code, address and balance displays, QR codes, network reads, and wallet generation are provided without warranty of any kind, express or implied.</li>
+          <li><b>No liability.</b> The operator(s) shall not be liable for any direct, indirect, incidental, special, consequential, or punitive damages, including loss of funds, data, or profits, arising from use of (or inability to use) the service.</li>
+          <li><b>Real payments, on-chain settlement.</b> Any XRP you send to or from a wallet created here is a real XRP Ledger transaction: permanent, irreversible, and publicly visible on the XRPL. There is no "undo." Activating an account locks a base reserve (about 1 XRP on mainnet) that cannot be spent while the account exists.</li>
+          <li><b>Non-custodial &amp; client-side.</b> Wallets you generate or import are created in your browser and are never sent to or stored on our servers. We cannot access, recover, freeze, or reverse anything for you. To reduce tampering and data-exfiltration risk, this page loads its cryptographic libraries (xrpl.js and the QR code library) from our own origin rather than a third-party CDN, and a Content-Security-Policy restricts the page to sending data only to public XRPL nodes. These measures lower risk but do <b>not</b> guarantee security, and no web application can be made perfectly secure. You remain responsible for the security of your device, browser, extensions, and network. Malware, phishing, a compromised device, or user error can still cause total, unrecoverable loss.</li>
+          <li><b>Backup, storage &amp; export are your responsibility.</b> A generated wallet exists only in your browser until you back it up; if you lose the seed, no one can recover it. "Save in this browser" keeps the seed in this browser's local storage on this device only, unencrypted. Exported backup files (.json and .txt) contain your seed in <b>plain text</b>. Any prompt to back up before leaving the page is a convenience reminder, not a guarantee against loss. Anyone who obtains your seed or backup file, or unlocked access to your device, can spend your funds.</li>
+          <li><b>Not financial or investment advice.</b> Cryptocurrency use involves substantial risk of loss and XRP is volatile. Only use funds you can afford to lose.</li>
+          <li><b>Third-party dependencies.</b> The tool relies on public XRPL nodes and APIs (for example xrplcluster.com and the testnet faucet), which may fail, rate-limit, change, or return incorrect data without notice.</li>
+          <li><b>Compliance.</b> You are solely responsible for complying with all applicable laws, regulations, export controls, sanctions, and tax obligations in your jurisdiction.</li>
+        </ol>
+        <p style="margin:10px 0 0"><b>Privacy &amp; security.</b> Seeds and keys you generate or import stay in your browser; we do not receive or store them. This page has no analytics and no server of its own: it is static hosting that serves its own cryptographic libraries from our origin, and a Content-Security-Policy limits the page's outbound connections to public XRPL nodes only, reducing the risk of code tampering or key exfiltration. The only network calls it makes are to those XRPL nodes for balance and faucet requests. "Save in this browser" stores the seed unencrypted in this browser's local storage on this device only, until you use "Forget wallet." These safeguards reduce but cannot eliminate risk. Operated by Embryo Space Inc. (DBA BSVKey). Not financial advice.</p>
+      </div>
+    </div>
+  </footer>
+</main>
+
+<script src="/vendor/xrpl-4.4.1.min.js"></script>
+<script src="/vendor/qrcode-1.0.0.min.js"></script>
+<script src="/js/wallet.js"></script>
+</body>
+</html>
