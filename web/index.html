@@ -59,6 +59,7 @@
   .card p{color:var(--muted); font-size:14px; margin:0}
   footer{border-top:1px solid var(--border); color:var(--muted); font-size:13px; padding:26px 0 40px}
   footer a{color:var(--muted)}
+  @media (max-width:640px){header .wrap{flex-wrap:wrap;height:auto;min-height:60px} .nav a{margin-left:0;margin-right:14px} .nav{width:100%;padding-bottom:10px}}
 </style>
 </head>
 <body>
@@ -67,9 +68,10 @@
   <span class="grow"></span>
   <nav class="nav">
     <a href="/wallet.html">XRP wallet</a>
+    <a href="https://bsvkey.com">BSVKey</a>
     <a href="https://inference.bsvkey.com">Inference</a>
     <a href="https://paywall.bsvkey.com">Paywall</a>
-    <a href="https://bsvkey.com">BSVKey</a>
+    <a href="https://dtn.bsvkey.com">DTN</a>
   </nav>
 </div></header>
 
@@ -98,7 +100,7 @@
       <div class="rail">
         <h3><span class="dotb" style="background:var(--xrp)"></span> XRP Ledger <span class="tag dev">Proven on mainnet</span></h3>
         <p>The same pay-per-call model settled on the XRP Ledger, for agents and services that already transact in XRP. The rail is built and open-source: the full pay, verify, sign, and verify-claim loop has run against a real settlement on XRP mainnet. A hosted product follows; early-access partners shape it.</p>
-        <p style="margin-top:10px"><a href="https://github.com/EmbryoSpace/xrp-capacity-attest">xrp-capacity-attest</a> · <a href="/wallet.html">XRP wallet</a> · <a href="mailto:support@embryospace.com?subject=BSVKey%20on%20XRP%20-%20early%20access">early access</a></p>
+        <p style="margin-top:10px"><a href="https://github.com/EmbryoSpace/xrp-capacity-attest" target="_blank" rel="noopener noreferrer">xrp-capacity-attest</a> · <a href="/wallet.html">XRP wallet</a> · <a href="mailto:support@embryospace.com?subject=BSVKey%20on%20XRP%20-%20early%20access">early access</a></p>
       </div>
       <div class="rail">
         <h3><span class="dotb" style="background:var(--muted)"></span> More rails <span class="tag soon">As demand warrants</span></h3>
@@ -115,7 +117,7 @@
       <div class="card"><h4>Pay per call</h4><p>Metered settlement per request, no accounts or prepaid lock-in required.</p></div>
       <div class="card"><h4>Verifiable receipts</h4><p>A content-addressed, signed record of each settled call that anyone can verify offline, tied to the on-chain transaction. The claim format is shared across rails; only the signature envelope and address encoding are rail-specific.</p></div>
     </div>
-    <p class="sub" style="margin-top:20px">We build the verifiable-receipt layer in the open. We contributed the BSV rail to an emerging post-call attestation standard for agent payments: <a href="https://github.com/EmbryoSpace/bsv-capacity-attest">EmbryoSpace/bsv-capacity-attest</a>. The XRP rail follows the same content-addressed core and is open-source too: <a href="https://github.com/EmbryoSpace/xrp-capacity-attest">EmbryoSpace/xrp-capacity-attest</a>.</p>
+    <p class="sub" style="margin-top:20px">We build the verifiable-receipt layer in the open. We contributed the BSV rail to an emerging post-call attestation standard for agent payments: <a href="https://github.com/EmbryoSpace/bsv-capacity-attest" target="_blank" rel="noopener noreferrer">EmbryoSpace/bsv-capacity-attest</a>. The XRP rail follows the same content-addressed core and is open-source too: <a href="https://github.com/EmbryoSpace/xrp-capacity-attest" target="_blank" rel="noopener noreferrer">EmbryoSpace/xrp-capacity-attest</a>.</p>
   </section>
 
   <section>
@@ -129,7 +131,8 @@
 
 <footer><div class="wrap">
   BSVKey is a product of Embryo Space Inc. Verifiable, non-custodial, pay-per-call settlement for AI agents. BSV is live today; the XRP Ledger rail is proven on mainnet and open-source. Nothing here is investment advice.
-  <div style="margin-top:8px"><a href="/wallet.html">XRP wallet</a> · <a href="https://github.com/EmbryoSpace/xrp-capacity-attest">xrp-capacity-attest</a> · <a href="https://github.com/EmbryoSpace/bsv-capacity-attest">bsv-capacity-attest</a> · <a href="https://inference.bsvkey.com">Inference</a> · <a href="https://paywall.bsvkey.com">Paywall</a> · <a href="https://bsvkey.com">BSVKey</a> · <a href="mailto:support@embryospace.com">support@embryospace.com</a></div>
+  <div style="margin-top:8px"><a href="/">XRP rail</a> · <a href="/wallet.html">XRP wallet</a> · <a href="https://bsvkey.com">BSVKey</a> · <a href="https://inference.bsvkey.com">Inference</a> · <a href="https://paywall.bsvkey.com">Paywall</a> · <a href="https://dtn.bsvkey.com">DTN</a> · <a href="https://github.com/EmbryoSpace/xrp-capacity-attest" target="_blank" rel="noopener noreferrer">GitHub</a></div>
+  <div style="margin-top:6px"><a href="/privacy.html">Privacy</a> · <a href="/legal.html">Legal</a> · <a href="mailto:support@embryospace.com">support@embryospace.com</a></div>
 </div></footer>
 </body>
 </html>

@@ -43,12 +43,22 @@
   a{color:var(--xrp)}
   [hidden]{display:none!important}
   footer{color:var(--muted);font-size:12px;padding:24px 0 40px}
+  footer a{color:var(--muted)}
+  header .wrap{flex-wrap:wrap;height:auto;min-height:56px}
+  .nav a{color:var(--muted);font-size:13px;margin-left:14px;text-decoration:none}
+  @media (max-width:640px){.nav{width:100%;padding-bottom:10px} .nav a{margin-left:0;margin-right:12px}}
 </style>
 </head>
 <body>
 <header><div class="wrap">
-  <div class="brand"><span class="dot"></span> BSVKey</div><span class="grow"></span>
-  <a class="muted" href="https://xrp.bsvkey.com" style="text-decoration:none">XRP rail</a>
+  <a class="brand" href="/" style="text-decoration:none;color:var(--ink)"><span class="dot"></span> BSVKey</a><span class="grow"></span>
+  <nav class="nav">
+    <a href="/">XRP rail</a>
+    <a href="https://bsvkey.com">BSVKey</a>
+    <a href="https://inference.bsvkey.com">Inference</a>
+    <a href="https://paywall.bsvkey.com">Paywall</a>
+    <a href="https://dtn.bsvkey.com">DTN</a>
+  </nav>
 </div></header>
 
 <main class="wrap">
@@ -141,7 +151,8 @@
         <div class="brand" style="margin-bottom:6px"><span class="dot"></span> BSVKey XRP Wallet</div>
         <div>Embryo Space Inc. DBA BSVKey</div>
       </div>
-      <div><a href="https://xrp.bsvkey.com">xrp.bsvkey.com</a></div>
+      <div style="text-align:right"><div><a href="/">XRP rail</a> · <a href="/wallet.html">XRP wallet</a> · <a href="https://bsvkey.com">BSVKey</a> · <a href="https://inference.bsvkey.com">Inference</a> · <a href="https://paywall.bsvkey.com">Paywall</a> · <a href="https://dtn.bsvkey.com">DTN</a> · <a href="https://github.com/EmbryoSpace/xrp-capacity-attest" target="_blank" rel="noopener noreferrer">GitHub</a></div>
+  <div style="margin-top:6px"><a href="/privacy.html">Privacy</a> · <a href="/legal.html">Legal</a> · <a href="mailto:support@embryospace.com">support@embryospace.com</a></div></div>
     </div>
 
     <div id="disclaimers" style="border-top:1px solid var(--border);margin-top:22px;padding-top:20px">
