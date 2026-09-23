@@ -1,7 +1,7 @@
 (function(){
   var $=function(id){return document.getElementById(id)};
   var LS='bsvkey_xrp_wallet';
-  var state={net:'mainnet', wallet:null, seedShown:false, backedUp:false};
+  var state={net:'mainnet', wallet:null, seedShown:false, backedUp:false, acct:null, sendMax:false};
   var WSS={testnet:'wss://s.altnet.rippletest.net:51233', mainnet:'wss://xrplcluster.com'};
 
   function showErr(m){var e=$('err');e.textContent=m;e.hidden=!m}
@@ -10,7 +10,7 @@
     Array.prototype.forEach.call($('netSeg').children,function(b){b.classList.toggle('on',b.dataset.net===n)});
     $('netNote').textContent = n==='testnet' ? 'Testnet: free XRP from the faucet, safe for testing.' : 'Mainnet: real XRP. Double-check before funding.';
     $('faucetBtn').hidden = n!=='testnet';
-    $('balOut').textContent='';
+    $('balOut').textContent=''; state.acct=null; showAvail();
     if(state.wallet) checkBalance();
   }
 
@@ -25,9 +25,64 @@
     try{ new QRCode($('qr'),{text:w.classicAddress,width:150,height:150,colorDark:'#000',colorLight:'#fff'}); }catch(e){}
     $('faucetBtn').hidden = state.net!=='testnet';
     $('balOut').textContent='';
+    state.acct=null; state.sendMax=false; showAvail();
     $('sendTo').value=''; $('sendAmt').value=''; $('sendTag').value=''; $('sendMemo').value=''; $('sendOut').textContent='';
     checkBalance();
   }
+
+  // Drops are integers (1 XRP = 1,000,000 drops); do the reserve math in drops.
+  function xrpStr(drops){ return xrpl.dropsToXrp(String(Math.max(0, drops))); }
+
+  // Balance, the reserve the ledger locks (base + per owned object), and what can
+  // actually be sent. Returns null if the account is not activated yet.
+  async function accountState(c, addr){
+    var info;
+    try{ info=(await c.request({command:'account_info', account:addr, ledger_index:'validated'})).result; }
+    catch(e){ if(/actNotFound|Account not found/i.test(String(e && (e.data && e.data.error) || e.message))) return null; throw e; }
+    var srv=(await c.request({command:'server_info'})).result.info.validated_ledger;
+    var bal=Number(info.account_data.Balance);
+    var owners=Number(info.account_data.OwnerCount||0);
+    var reserve=Math.round((Number(srv.reserve_base_xrp)+owners*Number(srv.reserve_inc_xrp))*1e6);
+    var fee=Math.max(12, Math.round(Number(srv.base_fee_xrp||0.00001)*1e6*1.2));
+    return { balance:bal, reserve:reserve, fee:fee, spendable:Math.max(0, bal-reserve-fee), reserveBase:Math.round(Number(srv.reserve_base_xrp)*1e6) };
+  }
+
+  function showAvail(){
+    var a=state.acct, el=$('sendAvail');
+    if(!el) return;
+    if(!a){ el.textContent=''; return; }
+    el.textContent='Available to send: '+xrpStr(a.spendable)+' XRP  (balance '+xrpStr(a.balance)+' XRP, '+xrpStr(a.reserve)+' XRP reserve stays locked, network fee about '+xrpStr(a.fee)+' XRP)';
+  }
+
+  // Plain-English reasons for the ledger's result codes.
+  var TX_REASONS={
+    tecUNFUNDED_PAYMENT:'not enough spendable XRP. The ledger keeps the reserve locked, so you can send at most the "available to send" amount.',
+    tecNO_DST_INSUF_XRP:'the destination is not activated yet, and a first payment to it must be at least the base reserve.',
+    tecDST_TAG_NEED:'the destination requires a destination tag (exchanges usually do). Add the tag they gave you.',
+    tecNO_DST:'the destination account does not exist.',
+    temBAD_AMOUNT:'the amount is not valid.',
+    temREDUNDANT:'you cannot send to your own address.',
+    tefPAST_SEQ:'the transaction was already used. Check balance and try again.',
+    telINSUF_FEE_P:'the network is busy and the fee was too low. Try again in a moment.'
+  };
+  // Read what people actually type: ".6", "0.6", "$0.6", "0,6", " 1 000.5 ".
+  // Returns a canonical XRP string ("0.6"), or null if it is not a valid amount.
+  // XRP has 6 decimal places (drops), so more than 6 decimals is refused.
+  function normalizeAmount(raw){
+    var s=String(raw||'').trim().replace(/^\$/,'').replace(/\s+/g,'').replace(/XRP$/i,'');
+    // One comma is a decimal point ("0,6", "2,5") unless it reads as a thousands
+    // separator ("1,000"); any other commas are thousands separators ("1,000,000").
+    var cm=/^(\d*),(\d+)$/.exec(s);
+    if(cm && (cm[1]===''||cm[1]==='0'||cm[2].length!==3)) s=cm[1]+'.'+cm[2];
+    else s=s.replace(/,/g,'');
+    if(/^\./.test(s)) s='0'+s;                        // ".6" -> "0.6"
+    if(/\.$/.test(s)) s=s.slice(0,-1);                // "1." -> "1"
+    if(!/^\d+(\.\d{1,6})?$/.test(s)) return null;
+    s=s.replace(/^0+(?=\d)/,'');                     // "007" -> "7"
+    return s;
+  }
+
+  function reasonFor(code){ return TX_REASONS[code] ? (code+': '+TX_REASONS[code]) : code; }
 
   // Read the on-chain balance for the current wallet on the current network.
   async function checkBalance(){
@@ -37,14 +92,11 @@
     var c=new xrpl.Client(WSS[state.net]);
     try{
       await c.connect();
-      try{
-        var bal=await c.getXrpBalance(target);
-        if(state.wallet && state.wallet.classicAddress===target)
-          $('balOut').innerHTML='<span class="pill good">'+bal+' XRP</span>';
-      }catch(inner){
-        if(state.wallet && state.wallet.classicAddress===target)
-          $('balOut').innerHTML='<span class="pill bad">not activated</span> <span class="muted">fund it with at least the base reserve</span>';
-      }
+      var a=await accountState(c, target);
+      if(!(state.wallet && state.wallet.classicAddress===target)) return;
+      state.acct=a; showAvail();
+      if(a) $('balOut').innerHTML='<span class="pill good">'+xrpStr(a.balance)+' XRP</span> <span class="muted">'+xrpStr(a.spendable)+' spendable</span>';
+      else $('balOut').innerHTML='<span class="pill bad">not activated</span> <span class="muted">fund it with at least the base reserve</span>';
     }catch(e){
       if(state.wallet && state.wallet.classicAddress===target)
         $('balOut').textContent='could not reach the network: '+e.message;
@@ -161,52 +213,96 @@
 
   $('balBtn').onclick=function(){ checkBalance(); };
 
-  // Send XRP. Always asks about the memo after Send is clicked, then confirms
-  // the (irreversible) transfer, then signs and submits from the browser.
+  // Max: everything above the locked reserve, less the network fee. The exact fee
+  // is re-applied at send time so a max send never fails on a fee change.
+  $('maxBtn').onclick=async function(){
+    if(!state.wallet){ $('sendOut').textContent='create or import a wallet first'; return; }
+    $('sendOut').textContent='reading balance...';
+    var c=new xrpl.Client(WSS[state.net]);
+    try{
+      await c.connect();
+      var a=await accountState(c, state.wallet.classicAddress);
+      state.acct=a; showAvail();
+      if(!a || a.spendable<=0){ $('sendAmt').value=''; state.sendMax=false; $('sendOut').textContent='nothing to send above the reserve'; return; }
+      $('sendAmt').value=xrpStr(a.spendable); state.sendMax=true; $('sendOut').textContent='';
+    }catch(e){ $('sendOut').textContent='could not reach the network: '+e.message; }
+    finally{ try{await c.disconnect()}catch(e){} }
+  };
+  $('sendAmt').addEventListener('input', function(){ state.sendMax=false; });
+  $('sendAmt').addEventListener('blur', function(){ var n=normalizeAmount(this.value); if(n!==null && n!==this.value) this.value=n; });
+
+  // Send XRP. Checks the address, the spendable amount, and the destination's
+  // requirements first, then asks ONE confirmation that always spells out the
+  // memo (so a missing memo is never a surprise), then signs and submits.
   $('sendBtn').onclick=async function(){
     if(!state.wallet){ $('sendOut').textContent='create or import a wallet first'; return; }
     var to=$('sendTo').value.trim();
     var amt=$('sendAmt').value.trim();
     var tag=$('sendTag').value.trim();
-    var memo=$('sendMemo').value;
+    var memo=$('sendMemo').value.trim();
+    var say=function(t){ $('sendOut').textContent=t; };
 
-    if(!to){ $('sendOut').textContent='enter a destination address'; $('sendTo').focus(); return; }
-    if(!amt || Number(amt)<=0){ $('sendOut').textContent='enter an amount in XRP'; $('sendAmt').focus(); return; }
+    if(!to){ say('enter a destination address'); $('sendTo').focus(); return; }
+    if(!xrpl.isValidClassicAddress(to)){ say('that is not a valid XRP address (it should start with r)'); $('sendTo').focus(); return; }
+    if(to===state.wallet.classicAddress){ say('that is this wallet\'s own address'); return; }
+    if(!amt){ say('enter an amount in XRP'); $('sendAmt').focus(); return; }
+    var norm=normalizeAmount(amt);
+    if(norm===null){ say('that amount is not valid: use digits and at most 6 decimals, for example 0.6'); $('sendAmt').focus(); return; }
+    if(!(Number(norm)>0)){ say('enter an amount above 0'); $('sendAmt').focus(); return; }
+    if(norm!==amt){ $('sendAmt').value=norm; amt=norm; }   // show what will actually be sent
+    if(tag!=='' && !/^\d+$/.test(tag)){ say('the destination tag must be a whole number'); $('sendTag').focus(); return; }
 
-    // Always ask about the memo after Send is clicked.
-    var wantMemo = window.confirm(
-      (memo.trim()
-        ? 'Your memo is:\n\n"'+memo.trim()+'"\n\nClick OK to edit it, or Cancel to send with this memo.'
-        : 'Do you want to add anything to the memo box (an invoice ID, reference, or note)?\n\nClick OK to add a memo now, or Cancel to send without one.')
-    );
-    if(wantMemo){ $('sendMemo').focus(); $('sendOut').textContent='add your memo, then click Send again'; return; }
-
-    memo=memo.trim();
-    var netLabel = state.net==='mainnet' ? 'MAINNET (real XRP)' : 'testnet';
-    var confirmMsg='Send '+amt+' XRP on '+netLabel+'\nto '+to
-      +(tag?('\ndestination tag: '+tag):'')
-      +(memo?('\nmemo: "'+memo+'"'):'\n(no memo)')
-      +'\n\nThis is irreversible. Proceed?';
-    if(!window.confirm(confirmMsg)) { $('sendOut').textContent='cancelled'; return; }
-
-    $('sendOut').textContent='signing and submitting...';
     var c=new xrpl.Client(WSS[state.net]);
     try{
+      say('checking...');
       await c.connect();
-      var tx={ TransactionType:'Payment', Account:state.wallet.classicAddress, Destination:to, Amount:xrpl.xrpToDrops(amt) };
+      var a=await accountState(c, state.wallet.classicAddress);
+      state.acct=a; showAvail();
+      if(!a){ say('this wallet is not activated yet: fund it with at least the base reserve first'); return; }
+      var drops=Number(xrpl.xrpToDrops(amt));   // exact, string-based: no float rounding
+      if(!state.sendMax && drops>a.spendable){ say('you can send at most '+xrpStr(a.spendable)+' XRP. '+xrpStr(a.reserve)+' XRP stays locked as the ledger reserve. Use Max to send everything available.'); return; }
+
+      var dest=await accountState(c, to).catch(function(){ return undefined; });
+      if(dest===null && drops<a.reserveBase){ say('the destination is not activated yet, so the first payment to it must be at least '+xrpStr(a.reserveBase)+' XRP'); return; }
+      if(dest!==undefined && dest!==null && tag===''){
+        try{
+          var di=(await c.request({command:'account_info', account:to, ledger_index:'validated'})).result.account_data;
+          if((Number(di.Flags)&0x00020000)!==0){ say('this destination requires a destination tag (exchanges usually give you one). Add it and press Send again.'); $('sendTag').focus(); return; }
+        }catch(e){}
+      }
+
+      var netLabel = state.net==='mainnet' ? 'MAINNET (real XRP)' : 'testnet';
+      var confirmMsg='Send '+(state.sendMax?'the maximum (about '+xrpStr(a.spendable)+')':amt)+' XRP on '+netLabel+'\nto '+to
+        +(tag?('\ndestination tag: '+tag):'\ndestination tag: none')
+        +(memo?('\nmemo (public, on-chain): "'+memo+'"'):'\nmemo: none. To add one, click Cancel, fill in the Memo box, and press Send again.')
+        +'\n\nThis is irreversible. Send now?';
+      if(!window.confirm(confirmMsg)) { say('cancelled, nothing was sent'); return; }
+
+      say('signing and submitting...');
+      var tx={ TransactionType:'Payment', Account:state.wallet.classicAddress, Destination:to, Amount:String(drops) };
       if(tag!==''){ tx.DestinationTag=Number(tag); }
       if(memo){ tx.Memos=[{ Memo:{ MemoData: xrpl.convertStringToHex(memo) } }]; }
       var prepared=await c.autofill(tx);
+      if(state.sendMax){
+        // Re-apply the exact fee the network asked for, so "max" never overdraws.
+        var maxDrops=a.balance-a.reserve-Number(prepared.Fee);
+        if(maxDrops<=0){ say('nothing to send above the reserve and fee'); return; }
+        prepared.Amount=String(maxDrops);
+      }
       var signed=state.wallet.sign(prepared);
       var res=await c.submitAndWait(signed.tx_blob);
       var code=res.result && res.result.meta && res.result.meta.TransactionResult;
       if(code==='tesSUCCESS'){
-        $('sendOut').innerHTML='<span class="pill good">sent</span> <span class="muted">tx '+res.result.hash+'</span>';
+        $('sendOut').innerHTML='<span class="pill good">sent</span> <span class="muted">'+xrpStr(Number(res.result.meta.delivered_amount||prepared.Amount))+' XRP, tx '+res.result.hash+'</span>';
+        state.sendMax=false; $('sendAmt').value='';
         checkBalance();
       } else {
-        $('sendOut').innerHTML='<span class="pill bad">'+(code||'failed')+'</span>';
+        $('sendOut').innerHTML='<span class="pill bad">not sent</span> <span class="muted">'+reasonFor(code||'failed')+'</span>';
       }
-    }catch(e){ $('sendOut').innerHTML='<span class="pill bad">error</span> <span class="muted">'+e.message+'</span>'; }
+    }catch(e){
+      var m=String((e && e.data && (e.data.engine_result||e.data.error)) || e.message || e);
+      $('sendOut').innerHTML='<span class="pill bad">not sent</span> <span class="muted">'+reasonFor(m)+'</span>';
+    }
     finally{ try{await c.disconnect()}catch(e){} }
   };
 
