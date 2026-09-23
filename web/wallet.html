@@ -51,6 +51,16 @@
   details#disclaimers>summary::before{content:"+ ";font-weight:700}
   details#disclaimers[open]>summary::before{content:"- "}
   footer a{color:var(--muted)}
+  .status{margin-top:10px;padding:13px 15px;border-radius:12px;font-size:15px;font-weight:600;line-height:1.45;border:1px solid var(--border-strong);background:var(--surface-2);color:var(--ink);overflow-wrap:anywhere}
+  .status .small{display:block;margin-top:4px;font-size:12px;font-weight:500;color:var(--muted);font-family:var(--mono)}
+  .status.busy{border-color:var(--xrp);background:rgba(35,160,214,.14);color:var(--xrp)}
+  .status.ok{border-color:var(--good);background:rgba(123,201,138,.14);color:var(--good)}
+  .status.bad{border-color:var(--bad);background:rgba(232,131,111,.12);color:var(--bad)}
+  .status.info{color:var(--ink)}
+  .spin{display:inline-block;width:15px;height:15px;margin-right:9px;vertical-align:-2px;border:2.5px solid currentColor;border-right-color:transparent;border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  @media (prefers-reduced-motion:reduce){.spin{animation:none}}
+  button:disabled{opacity:.55;cursor:not-allowed}
   header .wrap{flex-wrap:wrap;height:auto;min-height:56px}
   .nav a{color:var(--muted);font-size:13px;margin-left:14px;text-decoration:none}
   @media (max-width:640px){.nav{width:100%;padding-bottom:10px} .nav a{margin-left:0;margin-right:12px}}
@@ -139,8 +149,8 @@
         <input id="sendMemo" placeholder="Memo (optional): invoice ID, reference, note" autocomplete="off" maxlength="900">
         <div class="row">
           <button class="btn-primary" id="sendBtn">Send</button>
-          <span id="sendOut" class="muted"></span>
         </div>
+        <div id="sendOut" class="status" role="status" aria-live="polite" hidden></div>
       </div>
       <p class="muted" style="margin-top:6px">Sending is irreversible and settles on the live XRP Ledger. Many exchanges require a destination tag: leaving it out can lose the funds. The memo is written on-chain in plain text and is publicly visible; do not put anything private in it.</p>
     </div>

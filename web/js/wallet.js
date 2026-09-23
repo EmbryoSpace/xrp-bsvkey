@@ -26,7 +26,7 @@
     $('faucetBtn').hidden = state.net!=='testnet';
     $('balOut').textContent='';
     state.acct=null; state.sendMax=false; showAvail();
-    $('sendTo').value=''; $('sendAmt').value=''; $('sendTag').value=''; $('sendMemo').value=''; $('sendOut').textContent='';
+    $('sendTo').value=''; $('sendAmt').value=''; $('sendTag').value=''; $('sendMemo').value=''; status('');
     checkBalance();
   }
 
@@ -52,6 +52,19 @@
     if(!el) return;
     if(!a){ el.textContent=''; return; }
     el.textContent='Available to send: '+xrpStr(a.spendable)+' XRP  (balance '+xrpStr(a.balance)+' XRP, '+xrpStr(a.reserve)+' XRP reserve stays locked, network fee about '+xrpStr(a.fee)+' XRP)';
+  }
+
+  // The send status box: 'busy' (blue, spinner), 'ok' (green), 'bad' (red), or
+  // 'info' (neutral). While busy, Send and Max are locked so one click can't
+  // turn into two payments.
+  function esc(t){ return String(t).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]}); }
+  function status(kind, text, smallHtml){
+    var el=$('sendOut');
+    if(!text){ el.hidden=true; el.className='status'; el.innerHTML=''; return; }
+    el.hidden=false; el.className='status '+kind;
+    el.innerHTML=(kind==='busy'?'<span class="spin" aria-hidden="true"></span>':'')+esc(text)+(smallHtml?'<span class="small">'+smallHtml+'</span>':'');
+    var busy=(kind==='busy');
+    $('sendBtn').disabled=busy; $('maxBtn').disabled=busy;
   }
 
   // Plain-English reasons for the ledger's result codes.
@@ -216,16 +229,16 @@
   // Max: everything above the locked reserve, less the network fee. The exact fee
   // is re-applied at send time so a max send never fails on a fee change.
   $('maxBtn').onclick=async function(){
-    if(!state.wallet){ $('sendOut').textContent='create or import a wallet first'; return; }
-    $('sendOut').textContent='reading balance...';
+    if(!state.wallet){ status('info','Create or import a wallet first.'); return; }
+    status('busy','Reading your balance...');
     var c=new xrpl.Client(WSS[state.net]);
     try{
       await c.connect();
       var a=await accountState(c, state.wallet.classicAddress);
       state.acct=a; showAvail();
-      if(!a || a.spendable<=0){ $('sendAmt').value=''; state.sendMax=false; $('sendOut').textContent='nothing to send above the reserve'; return; }
-      $('sendAmt').value=xrpStr(a.spendable); state.sendMax=true; $('sendOut').textContent='';
-    }catch(e){ $('sendOut').textContent='could not reach the network: '+e.message; }
+      if(!a || a.spendable<=0){ $('sendAmt').value=''; state.sendMax=false; status('info','Nothing to send above the locked reserve.'); return; }
+      $('sendAmt').value=xrpStr(a.spendable); state.sendMax=true; status('');
+    }catch(e){ status('bad','Could not reach the XRP Ledger: '+e.message); }
     finally{ try{await c.disconnect()}catch(e){} }
   };
   $('sendAmt').addEventListener('input', function(){ state.sendMax=false; });
@@ -235,12 +248,12 @@
   // requirements first, then asks ONE confirmation that always spells out the
   // memo (so a missing memo is never a surprise), then signs and submits.
   $('sendBtn').onclick=async function(){
-    if(!state.wallet){ $('sendOut').textContent='create or import a wallet first'; return; }
+    if(!state.wallet){ status('info','Create or import a wallet first.'); return; }
     var to=$('sendTo').value.trim();
     var amt=$('sendAmt').value.trim();
     var tag=$('sendTag').value.trim();
     var memo=$('sendMemo').value.trim();
-    var say=function(t){ $('sendOut').textContent=t; };
+    var say=function(t){ status('bad', t.charAt(0).toUpperCase()+t.slice(1)); };
 
     if(!to){ say('enter a destination address'); $('sendTo').focus(); return; }
     if(!xrpl.isValidClassicAddress(to)){ say('that is not a valid XRP address (it should start with r)'); $('sendTo').focus(); return; }
@@ -254,7 +267,7 @@
 
     var c=new xrpl.Client(WSS[state.net]);
     try{
-      say('checking...');
+      status('busy','Checking your balance and the destination...');
       await c.connect();
       var a=await accountState(c, state.wallet.classicAddress);
       state.acct=a; showAvail();
@@ -276,9 +289,9 @@
         +(tag?('\ndestination tag: '+tag):'\ndestination tag: none')
         +(memo?('\nmemo (public, on-chain): "'+memo+'"'):'\nmemo: none. To add one, click Cancel, fill in the Memo box, and press Send again.')
         +'\n\nThis is irreversible. Send now?';
-      if(!window.confirm(confirmMsg)) { say('cancelled, nothing was sent'); return; }
+      if(!window.confirm(confirmMsg)) { status('info','Cancelled. Nothing was sent.'); return; }
 
-      say('signing and submitting...');
+      status('busy','Sending... signing and submitting to the XRP Ledger. Keep this page open.', 'This usually takes 3 to 5 seconds.');
       var tx={ TransactionType:'Payment', Account:state.wallet.classicAddress, Destination:to, Amount:String(drops) };
       if(tag!==''){ tx.DestinationTag=Number(tag); }
       if(memo){ tx.Memos=[{ Memo:{ MemoData: xrpl.convertStringToHex(memo) } }]; }
@@ -293,17 +306,19 @@
       var res=await c.submitAndWait(signed.tx_blob);
       var code=res.result && res.result.meta && res.result.meta.TransactionResult;
       if(code==='tesSUCCESS'){
-        $('sendOut').innerHTML='<span class="pill good">sent</span> <span class="muted">'+xrpStr(Number(res.result.meta.delivered_amount||prepared.Amount))+' XRP, tx '+res.result.hash+'</span>';
+        var hash=res.result.hash;
+        status('ok','Sent '+xrpStr(Number(res.result.meta.delivered_amount||prepared.Amount))+' XRP. Confirmed on the ledger.',
+          'tx '+esc(hash)+' &middot; <a href="'+(state.net==='mainnet'?'https://livenet.xrpl.org/transactions/':'https://testnet.xrpl.org/transactions/')+hash+'" target="_blank" rel="noopener noreferrer">view on the XRPL explorer</a>');
         state.sendMax=false; $('sendAmt').value='';
         checkBalance();
       } else {
-        $('sendOut').innerHTML='<span class="pill bad">not sent</span> <span class="muted">'+reasonFor(code||'failed')+'</span>';
+        status('bad','Not sent: '+reasonFor(code||'failed'));
       }
     }catch(e){
       var m=String((e && e.data && (e.data.engine_result||e.data.error)) || e.message || e);
-      $('sendOut').innerHTML='<span class="pill bad">not sent</span> <span class="muted">'+reasonFor(m)+'</span>';
+      status('bad','Not sent: '+reasonFor(m));
     }
-    finally{ try{await c.disconnect()}catch(e){} }
+    finally{ try{await c.disconnect()}catch(e){} $('sendBtn').disabled=false; $('maxBtn').disabled=false; }
   };
 
   $('faucetBtn').onclick=async function(){
